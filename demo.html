@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Timer - 10000Timer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --bg-dark: #0d0d0d;
+            --accent-yellow: #ffcf33;
+            --accent-blue: #3b82f6;
+            --text-dim: #888888;
+        }
+
+        /* Minimal replacements for the Tailwind utility classes used in the markup
+           so this file works offline inside Electron (no CDN required). */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .gap-4 { gap: 1rem; }
+        .gap-3 { gap: 0.75rem; }
+        .items-center { align-items: center; }
+        .cursor-pointer { cursor: pointer; }
+        .font-bold { font-weight: 700; }
+        .tracking-tighter { letter-spacing: -0.02em; }
+        .text-white { color: #fff; }
+        .text-xl { font-size: 1.25rem; }
+        .w-48 { width: 12rem; }
+        .accent-yellow { accent-color: var(--accent-yellow); }
+        .text-dim { color: var(--text-dim); }
+        .hover\:text-white:hover { color: #fff; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        .nav-center {
+            display: flex;
+            gap: 2rem;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .nav-item {
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #fff;
+        }
+
+        /* Main Timer Area */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .progress-container {
+            position: relative;
+            width: 420px;
+            height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring circle {
+            fill: transparent;
+            stroke-width: 6;
+            stroke-linecap: round;
+        }
+
+        .circle-bg {
+            stroke: #1a1a1a;
+        }
+
+        .circle-progress {
+            stroke: var(--accent-yellow);
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .timer-display {
+            position: absolute;
+            font-size: 7rem;
+            font-weight: 300;
+            letter-spacing: -4px;
+        }
+
+        /* Controls */
+        .controls-wrapper {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .task-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #333;
+            color: #fff;
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 0.5rem;
+            width: 300px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .task-input:focus {
+            border-bottom-color: var(--accent-yellow);
+        }
+
+        .primary-btn {
+            background: var(--accent-yellow);
+            color: #000;
+            padding: 0.8rem 3.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            transition: transform 0.1s;
+        }
+
+        .primary-btn:active {
+            transform: scale(0.96);
+        }
+
+        .secondary-btn {
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+        }
+
+        .secondary-btn:hover {
+            color: #fff;
+        }
+
+        /* Bottom Widgets */
+        .bottom-widgets {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            right: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .ambient-controls {
+            display: flex;
+            gap: 1rem;
+            background: #161616;
+            padding: 0.8rem 1.2rem;
+            border-radius: 100px;
+            border: 1px solid #222;
+        }
+
+        .ambient-btn {
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1.1rem;
+        }
+
+        .ambient-btn.active {
+            color: var(--accent-blue);
+        }
+
+        .task-pill {
+            background: #161616;
+            border: 1px solid #222;
+            padding: 0.6rem 1.2rem;
+            border-radius: 100px;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+
+        .task-pill .daily-summary-icon {
+            color: var(--accent-yellow);
+        }
+
+        .task-column {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .daily-tasks-list {
+            width: 340px;
+            margin-top: 0.8rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 210px;
+            overflow: auto;
+        }
+
+        .daily-tasks-list.open {
+            display: flex;
+        }
+
+        .daily-task-item {
+            background: #161616;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 0.6rem 0.8rem;
+            cursor: pointer;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.8rem;
+        }
+
+        .daily-task-item:hover {
+            border-color: #333;
+        }
+
+        .daily-task-item.done {
+            opacity: 0.65;
+            text-decoration: line-through;
+        }
+
+        .settings-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .settings-card {
+            width: min(520px, 92vw);
+            background: #0f0f0f;
+            border: 1px solid #222;
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .secondary-action {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #222;
+            border-radius: 12px;
+            padding: 0.65rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .secondary-action:hover {
+            border-color: #333;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <nav class="top-nav">
+        <div class="font-bold tracking-tighter text-white text-xl">10000Timer</div>
+        <div class="nav-center">
+            <span class="nav-item active" onclick="setMode('pomo')">Focus</span>
+            <span class="nav-item" onclick="setMode('short')">Short Break</span>
+            <span class="nav-item" onclick="setMode('long')">Long Break</span>
+            <span class="nav-item" onclick="setMode('anime')">Animedoro</span>
+        </div>
+        <div class="flex gap-4">
+            <span id="settings-btn" class="cursor-pointer hover:text-white text-dim" title="Settings" onclick="openSettings()">⚙</span>
+            <span id="fullscreen-btn" class="cursor-pointer hover:text-white text-dim" title="Fullscreen" onclick="toggleFullscreen()">⛶</span>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="main-container">
+        <div class="progress-container">
+            <div class="progress-ring">
+                <svg width="400" height="400">
+                    <circle class="circle-bg" cx="200" cy="200" r="190"></circle>
+                    <circle id="progress" class="circle-progress" cx="200" cy="200" r="190"></circle>
+                </svg>
+            </div>
+            <div class="timer-display" id="time-string">25:00</div>
+        </div>
+
+        <div class="controls-wrapper">
+            <input type="text" class="task-input" placeholder="What are you working on?">
+            <button id="main-btn" class="primary-btn" onclick="toggleTimer()">START</button>
+            <div class="secondary-btn" onclick="resetTimer()">Reset</div>
+        </div>
+    </main>
+
+    <!-- Footer Widgets -->
+    <div class="bottom-widgets">
+        <div class="ambient-controls">
+            <span class="ambient-btn" title="Wind" onclick="toggleAmbient('wind', this)">🌬</span>
+            <span class="ambient-btn" title="Rain" onclick="toggleAmbient('rain', this)">🌧</span>
+            <span class="ambient-btn" title="Fireplace" onclick="toggleAmbient('fireplace', this)">🔥</span>
+            <span class="ambient-btn" title="Cafe" onclick="toggleAmbient('cafe', this)">☕</span>
+        </div>
+
+        <div class="task-column">
+            <div class="task-pill" id="daily-summary" title="Click to view daily tasks" onclick="toggleDailyTasksPanel()">
+                <span class="daily-summary-icon">✓</span>
+                <span>Daily Tasks (0/3)</span>
+            </div>
+            <div id="daily-tasks-list" class="daily-tasks-list"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="settings-modal hidden" aria-hidden="true">
+        <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div class="settings-header">
+                <div id="settings-title" class="font-bold tracking-tighter text-white text-xl">Settings</div>
+                <span class="cursor-pointer text-dim hover:text-white" title="Close" onclick="closeSettings()">×</span>
+            </div>
+
+            <div class="settings-row">
+                <div class="text-dim">Sounds</div>
+                <label class="cursor-pointer flex items-center gap-3">
+                    <input id="sound-toggle" type="checkbox" class="accent-yellow" />
+                </label>
+            </div>
+
+            <div style="height: 1rem;"></div>
+
+            <div class="settings-row">
+                <div class="text-dim">Volume</div>
+                <input id="sound-volume" type="range" min="0" max="1" step="0.01" value="0.5" class="w-48" />
+            </div>
+
+            <div style="height: 1.5rem;"></div>
+
+            <div class="settings-actions">
+                <button class="secondary-action" onclick="resetDailyTasks()">Reset Daily Tasks</button>
+                <button class="secondary-action" onclick="resetAll()">Reset All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modes = {
+            pomo: { time: 25 * 60, color: "#ffcf33" },
+            short: { time: 5 * 60, color: "#3b82f6" },
+            long: { time: 15 * 60, color: "#10b981" },
+            anime: { time: 50 * 60, color: "#f43f5e" }
+        };
+
+        let currentMode = 'pomo';
+        let timeLeft = modes.pomo.time;
+        let timerId = null;
+        let isRunning = false;
+
+        const circle = document.getElementById('progress');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+
+        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+        circle.style.strokeDashoffset = 0;
+
+        // ---------------------------
+        // Daily Tasks
+        // ---------------------------
+        const DAILY_GOAL = 3;
+        const DAILY_STORAGE_KEY = '10000Timer_daily_tasks_v1';
+        let dailyState = { date: '', tasks: [] };
+
+        function todayKey() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function loadDailyState() {
+            try {
+                const raw = localStorage.getItem(DAILY_STORAGE_KEY);
+                if (!raw) return { date: todayKey(), tasks: [] };
+                const parsed = JSON.parse(raw);
+                if (!parsed || parsed.date !== todayKey() || !Array.isArray(parsed.tasks)) {
+                    return { date: todayKey(), tasks: [] };
+                }
+                return parsed;
+            } catch {
+                return { date: todayKey(), tasks: [] };
+            }
+        }
+
+        function saveDailyState() {
+            localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(dailyState));
+        }
+
+        function renderDailyTasks() {
+            const summary = document.querySelector('#daily-summary span');
+            const list = document.getElementById('daily-tasks-list');
+            if (!summary || !list) return;
+
+            const doneCount = dailyState.tasks.filter(t => t.done).length;
+            summary.textContent = `Daily Tasks (${doneCount}/${DAILY_GOAL})`;
+
+            list.innerHTML = '';
+            if (dailyState.tasks.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.color = '#888';
+                empty.style.fontSize = '0.9rem';
+                empty.textContent = 'Add up to 3 tasks for today.';
+                list.appendChild(empty);
+                return;
+            }
+
+            dailyState.tasks.forEach((task, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `daily-task-item${task.done ? ' done' : ''}`;
+                btn.onclick = () => toggleTaskDone(idx);
+
+                const left = document.createElement('div');
+                left.style.display = 'flex';
+                left.style.alignItems = 'center';
+                left.style.gap = '0.65rem';
+
+                const icon = document.createElement('span');
+                icon.textContent = task.done ? '✓' : '○';
+                icon.style.color = task.done ? '#3b82f6' : '#ffcf33';
+
+                const text = document.createElement('div');
+                text.textContent = task.text;
+
+                left.appendChild(icon);
+                left.appendChild(text);
+
+                const right = document.createElement('div');
+                right.style.color = '#888';
+                right.style.fontSize = '0.85rem';
+                right.textContent = task.done ? 'Done' : 'Tap to done';
+
+                btn.appendChild(left);
+                btn.appendChild(right);
+                list.appendChild(btn);
+            });
+        }
+
+        function toggleDailyTasksPanel() {
+            const list = document.getElementById('daily-tasks-list');
+            if (!list) return;
+            list.classList.toggle('open');
+        }
+
+        function addDailyTask(rawText) {
+            const text = String(rawText || '').trim();
+            if (!text) return;
+
+            if (dailyState.tasks.length >= DAILY_GOAL) {
+                flashTaskInput();
+                return;
+            }
+
+            dailyState.tasks.push({ text, done: false, createdAt: Date.now() });
+            saveDailyState();
+            renderDailyTasks();
+        }
+
+        function toggleTaskDone(idx) {
+            const t = dailyState.tasks[idx];
+            if (!t) return;
+
+            t.done = !t.done;
+            saveDailyState();
+            renderDailyTasks();
+
+            if (t.done) playSuccessBeep();
+        }
+
+        function resetDailyTasks() {
+            dailyState = { date: todayKey(), tasks: [] };
+            saveDailyState();
+            renderDailyTasks();
+            playSuccessBeep(320);
+        }
+
+        // ---------------------------
+        // Settings + Sounds
+        // ---------------------------
+        const SETTINGS_STORAGE_KEY = '10000Timer_settings_v1';
+        let settings = loadSettings();
+
+        function loadSettings() {
+            try {
+                const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+                if (!raw) return { soundEnabled: true, volume: 0.5 };
+                const parsed = JSON.parse(raw);
+                return {
+                    soundEnabled: parsed?.soundEnabled !== undefined ? !!parsed.soundEnabled : true,
+                    volume: typeof parsed?.volume === 'number' ? Math.min(1, Math.max(0, parsed.volume)) : 0.5
+                };
+            } catch {
+                return { soundEnabled: true, volume: 0.5 };
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        }
+
+        let audioCtx = null;
+        let masterGain = null;
+        const ambientNodes = {}; // key -> { stop: fn }
+
+        function ensureAudio() {
+            if (audioCtx) return;
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new Ctx();
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = settings.soundEnabled ? settings.volume : 0;
+            masterGain.connect(audioCtx.destination);
+            // Some browsers start AudioContext in "suspended" until resumed by user interaction.
+            audioCtx.resume?.().catch(() => {});
+        }
+
+        function applySoundSettings() {
+            if (!audioCtx || !masterGain) return;
+            const now = audioCtx.currentTime;
+            masterGain.gain.cancelScheduledValues(now);
+            masterGain.gain.setTargetAtTime(settings.soundEnabled ? settings.volume : 0, now, 0.02);
+        }
+
+        function makeNoiseBuffer(ctx) {
+            const bufferSize = ctx.sampleRate * 2;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                // Slightly weighted random samples for less harsh noise.
+                data[i] = (Math.random() * 2 - 1) * 0.6 + (Math.random() * 2 - 1) * 0.2;
+            }
+            return buffer;
+        }
+
+        function stopAmbient(key) {
+            const node = ambientNodes[key];
+            if (!node) return;
+            node.stop?.();
+            delete ambientNodes[key];
+        }
+
+        function stopAllAmbient() {
+            Object.keys(ambientNodes).forEach(k => stopAmbient(k));
+            document.querySelectorAll('.ambient-btn.active').forEach(el => el.classList.remove('active'));
+        }
+
+        function toggleAmbient(key, iconEl) {
+            if (!settings.soundEnabled) {
+                // Don't start audio if user disabled sounds.
+                iconEl.classList.remove('active');
+                return;
+            }
+
+            const willEnable = !iconEl.classList.contains('active');
+            iconEl.classList.toggle('active', willEnable);
+
+            if (!willEnable) stopAmbient(key);
+            else startAmbient(key);
+        }
+
+        function startAmbient(key) {
+            ensureAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume?.().catch(() => {});
+            stopAmbient(key);
+
+            const ctx = audioCtx;
+            const outGain = ctx.createGain();
+            outGain.gain.value = 0;
+            outGain.connect(masterGain);
+
+            const now = ctx.currentTime;
+            outGain.gain.setValueAtTime(0, now);
+            outGain.gain.linearRampToValueAtTime(1, now + 0.6);
+
+            const noise = ctx.createBufferSource();
+            noise.buffer = makeNoiseBuffer(ctx);
+            noise.loop = true;
+
+            let stopFn = () => {};
+
+            if (key === 'wind') {
+                const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 180;
+                const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+
+                const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.08;
+                const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.35;
+                lfo.connect(lfoGain);
+                lfoGain.connect(outGain.gain);
+
+                noise.connect(hp); hp.connect(lp); lp.connect(outGain);
+                noise.start(); lfo.start();
+
+                stopFn = () => {
+                    const t = ctx.currentTime;
+                    outGain.gain.cancelScheduledValues(t);
+                    outGain.gain.setTargetAtTime(0, t, 0.05);
+                    setTimeout(() => {
+                        try { noise.stop(); } catch {}
+                        try { lfo.stop(); } catch {}
+                        noise.disconnect(); hp.disconnect(); lp.disconnect();
+                        lfo.disconnect(); lfoGain.disconnect();
+                        outGain.disconnect();
+                    }, 350);
+                };
+            } else if (key === 'rain') {
+                const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1200;
+                const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = 1.2;
+
+                const lfo = ctx.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 3.5;
+                const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.18;
+                lfo.connect(lfoGain);
+                lfoGain.connect(outGain.gain);
+
+                noise.connect(hp); hp.connect(bp); bp.connect(outGain);
+                noise.start(); lfo.start();
+
+                stopFn = () => {
+                    const t = ctx.currentTime;
+                    outGain.gain.cancelScheduledValues(t);
+                    outGain.gain.setTargetAtTime(0, t, 0.05);
+                    setTimeout(() => {
+                        try { noise.stop(); } catch {}
+                        try { lfo.stop(); } catch {}
+                        noise.disconnect(); hp.disconnect(); bp.disconnect();
+                        lfo.disconnect(); lfoGain.disconnect();
+                        outGain.disconnect();
+                    }, 350);
+                };
+            } else if (key === 'fireplace') {
+                const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900; lp.Q.value = 0.7;
+                const trem = ctx.createOscillator(); trem.type = 'sine'; trem.frequency.value = 0.2;
+                const tremGain = ctx.createGain(); tremGain.gain.value = 0.45;
+                trem.connect(tremGain);
+                tremGain.connect(outGain.gain);
+
+                noise.connect(lp); lp.connect(outGain);
+                noise.start(); trem.start();
+
+                const crackle = ctx.createBufferSource();
+                crackle.buffer = makeNoiseBuffer(ctx);
+                const crackleGain = ctx.createGain();
+                crackleGain.gain.value = 0;
+                const crackleLP = ctx.createBiquadFilter(); crackleLP.type = 'lowpass'; crackleLP.frequency.value = 3500;
+                crackle.connect(crackleLP); crackleLP.connect(crackleGain); crackleGain.connect(outGain);
+                crackle.loop = true;
+
+                const crackleInterval = setInterval(() => {
+                    if (!ambientNodes[key]) return;
+                    const t = ctx.currentTime;
+                    crackleGain.gain.cancelScheduledValues(t);
+                    crackleGain.gain.setValueAtTime(0, t);
+                    crackleGain.gain.linearRampToValueAtTime(0.5, t + 0.01);
+                    crackleGain.gain.linearRampToValueAtTime(0, t + 0.08);
+                }, 520);
+
+                crackle.start();
+
+                stopFn = () => {
+                    clearInterval(crackleInterval);
+                    const t = ctx.currentTime;
+                    outGain.gain.cancelScheduledValues(t);
+                    outGain.gain.setTargetAtTime(0, t, 0.05);
+                    setTimeout(() => {
+                        try { noise.stop(); } catch {}
+                        try { trem.stop(); } catch {}
+                        try { crackle.stop(); } catch {}
+                        noise.disconnect(); lp.disconnect();
+                        trem.disconnect(); tremGain.disconnect();
+                        crackle.disconnect(); crackleLP.disconnect(); crackleGain.disconnect();
+                        outGain.disconnect();
+                    }, 400);
+                };
+            } else if (key === 'cafe') {
+                const hum = ctx.createOscillator();
+                hum.type = 'sine';
+                hum.frequency.value = 96;
+                const humGain = ctx.createGain();
+                humGain.gain.value = 0.18;
+
+                const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 0.9;
+                const lfo = ctx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.12;
+                const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.22;
+                lfo.connect(lfoGain);
+                lfoGain.connect(outGain.gain);
+
+                noise.connect(bp); bp.connect(outGain);
+                hum.connect(humGain); humGain.connect(outGain);
+                noise.start(); hum.start(); lfo.start();
+
+                stopFn = () => {
+                    const t = ctx.currentTime;
+                    outGain.gain.cancelScheduledValues(t);
+                    outGain.gain.setTargetAtTime(0, t, 0.05);
+                    setTimeout(() => {
+                        try { noise.stop(); } catch {}
+                        try { hum.stop(); } catch {}
+                        try { lfo.stop(); } catch {}
+                        noise.disconnect(); bp.disconnect();
+                        hum.disconnect(); humGain.disconnect();
+                        lfo.disconnect(); lfoGain.disconnect();
+                        outGain.disconnect();
+                    }, 350);
+                };
+            }
+
+            ambientNodes[key] = { stop: stopFn };
+        }
+
+        function playBeep(freq = 520, durationMs = 120, gainValue = 0.35) {
+            if (!settings.soundEnabled) return;
+            ensureAudio();
+
+            const doPlay = () => {
+                const ctx = audioCtx;
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+
+                const g = ctx.createGain();
+                g.gain.value = gainValue;
+
+                osc.connect(g);
+                g.connect(masterGain);
+
+                const now = ctx.currentTime;
+                g.gain.setValueAtTime(gainValue, now);
+                g.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
+                osc.start(now);
+                osc.stop(now + durationMs / 1000 + 0.02);
+            };
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume?.().then(doPlay).catch(() => {});
+                return;
+            }
+
+            doPlay();
+        }
+
+        function playSuccessBeep(freq = 680) {
+            playBeep(freq, 95, 0.28);
+            setTimeout(() => playBeep(freq * 0.88, 85, 0.24), 110);
+        }
+
+        function flashTaskInput() {
+            const input = document.querySelector('.task-input');
+            if (!input) return;
+            input.style.borderBottomColor = '#ff6b6b';
+            setTimeout(() => (input.style.borderBottomColor = ''), 250);
+        }
+
+        // ---------------------------
+        // Fullscreen
+        // ---------------------------
+        function toggleFullscreen() {
+            const isFs = !!document.fullscreenElement;
+            if (isFs) document.exitFullscreen?.().catch(() => {});
+            else document.documentElement.requestFullscreen?.().catch(() => {});
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fullscreen-btn');
+            if (!icon) return;
+            const isFs = !!document.fullscreenElement;
+            icon.textContent = isFs ? '⤢' : '⛶';
+        });
+
+        // ---------------------------
+        // Settings Modal
+        // ---------------------------
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        // Ensure clicks outside close the modal, and ESC works.
+        document.getElementById('settings-modal')?.addEventListener('click', (e) => {
+            const modal = document.getElementById('settings-modal');
+            if (!modal) return;
+            if (e.target === modal) closeSettings();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeSettings();
+        });
+
+        // Settings -> audio controls
+        document.getElementById('sound-toggle')?.addEventListener('change', (e) => {
+            settings.soundEnabled = !!e.target.checked;
+            saveSettings();
+            applySoundSettings();
+            if (!settings.soundEnabled) stopAllAmbient();
+        });
+        document.getElementById('sound-volume')?.addEventListener('input', (e) => {
+            settings.volume = Number(e.target.value);
+            saveSettings();
+            applySoundSettings();
+        });
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100 * circumference);
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function updateDisplay() {
+            const mins = Math.floor(timeLeft / 60);
+            const secs = timeLeft % 60;
+            const display = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            document.getElementById('time-string').innerText = display;
+            
+            const total = modes[currentMode].time;
+            const percent = ((total - timeLeft) / total) * 100;
+            setProgress(percent);
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(timerId);
+                document.getElementById('main-btn').innerText = 'START';
+            } else {
+                timerId = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timerId);
+                        isRunning = false;
+                        document.getElementById('main-btn').innerText = 'START';
+                    }
+                }, 1000);
+                document.getElementById('main-btn').innerText = 'STOP';
+            }
+            isRunning = !isRunning;
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isRunning = false;
+            timeLeft = modes[currentMode].time;
+            document.getElementById('main-btn').innerText = 'START';
+            updateDisplay();
+        }
+
+        function setMode(modeKey) {
+            currentMode = modeKey;
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if(item.innerText.toLowerCase().includes(modeKey.replace('pomo','focus'))) {
+                    item.classList.add('active');
+                }
+            });
+
+            circle.style.stroke = modes[modeKey].color;
+            document.getElementById('main-btn').style.backgroundColor = modes[modeKey].color;
+            resetTimer();
+        }
+
+        // Init
+        dailyState = loadDailyState();
+        renderDailyTasks();
+
+        updateDisplay();
+
+        // Daily task input: press Enter to add.
+        const taskInput = document.querySelector('.task-input');
+        taskInput?.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            addDailyTask(taskInput.value);
+            taskInput.value = '';
+            playSuccessBeep(560);
+        });
+
+        // Init settings UI state (audio starts only after user interaction).
+        const soundToggleEl = document.getElementById('sound-toggle');
+        const soundVolumeEl = document.getElementById('sound-volume');
+        if (soundToggleEl) soundToggleEl.checked = settings.soundEnabled;
+        if (soundVolumeEl) soundVolumeEl.value = String(settings.volume);
+        applySoundSettings();
+
+        function resetAll() {
+            resetDailyTasks();
+            resetTimer();
+            stopAllAmbient();
+            closeSettings();
+        }
+    </script>
+</body>
+</html>

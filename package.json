@@ -1,0 +1,32 @@
+{
+  "name": "10000Timer",
+  "version": "1.0.0",
+  "description": "Offline Electron wrapper for demo.html (Focus Timer).",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.10000Timer.app",
+    "productName": "10000Timer",
+    "asar": true,
+    "compression": "maximum",
+    "files": [
+      "demo.html",
+      "main.js"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "publish": null
+  }
+}
+

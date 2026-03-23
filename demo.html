@@ -321,6 +321,7 @@
             <span class="nav-item" onclick="setMode('short')">Short Break</span>
             <span class="nav-item" onclick="setMode('long')">Long Break</span>
             <span class="nav-item" onclick="setMode('anime')">Animedoro</span>
+            <span class="nav-item" style="color:var(--accent-blue);" onclick="goToZen()">Zen Mode</span>
         </div>
         <div class="flex gap-4">
             <span id="settings-btn" class="cursor-pointer hover:text-white text-dim" title="Settings" onclick="openSettings()">⚙</span>
@@ -349,11 +350,38 @@
 
     <!-- Footer Widgets -->
     <div class="bottom-widgets">
-        <div class="ambient-controls">
-            <span class="ambient-btn" title="Wind" onclick="toggleAmbient('wind', this)">🌬</span>
-            <span class="ambient-btn" title="Rain" onclick="toggleAmbient('rain', this)">🌧</span>
-            <span class="ambient-btn" title="Fireplace" onclick="toggleAmbient('fireplace', this)">🔥</span>
-            <span class="ambient-btn" title="Cafe" onclick="toggleAmbient('cafe', this)">☕</span>
+        <div class="ambient-board" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="font-size: 0.75rem; color: #555; text-transform: uppercase; letter-spacing: 1px; padding-left: 5px;">Soundboard</div>
+            <div class="ambient-controls" style="background: #161616; padding: 0.8rem 1.2rem; border-radius: 12px; border: 1px solid #222; display: flex; gap: 1.5rem;">
+                <!-- Wind -->
+                <div class="sound-track" style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 40px;">
+                    <span class="ambient-btn" title="Wind" onclick="toggleAmbient('wind', this)" style="display: flex;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                    </span>
+                    <input type="range" class="track-vol hidden" id="vol-wind" min="0" max="1" step="0.01" value="0.8" oninput="setAmbientVolume('wind', this.value)" style="width: 40px; height: 3px; accent-color: var(--accent-yellow);">
+                </div>
+                <!-- Rain -->
+                <div class="sound-track" style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 40px;">
+                    <span class="ambient-btn" title="Rain" onclick="toggleAmbient('rain', this)" style="display: flex;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>
+                    </span>
+                    <input type="range" class="track-vol hidden" id="vol-rain" min="0" max="1" step="0.01" value="0.8" oninput="setAmbientVolume('rain', this.value)" style="width: 40px; height: 3px; accent-color: var(--accent-yellow);">
+                </div>
+                <!-- Fireplace -->
+                <div class="sound-track" style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 40px;">
+                    <span class="ambient-btn" title="Fireplace" onclick="toggleAmbient('fireplace', this)" style="display: flex;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                    </span>
+                    <input type="range" class="track-vol hidden" id="vol-fireplace" min="0" max="1" step="0.01" value="0.8" oninput="setAmbientVolume('fireplace', this.value)" style="width: 40px; height: 3px; accent-color: var(--accent-yellow);">
+                </div>
+                <!-- Cafe -->
+                <div class="sound-track" style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 40px;">
+                    <span class="ambient-btn" title="Cafe" onclick="toggleAmbient('cafe', this)" style="display: flex;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    </span>
+                    <input type="range" class="track-vol hidden" id="vol-cafe" min="0" max="1" step="0.01" value="0.8" oninput="setAmbientVolume('cafe', this.value)" style="width: 40px; height: 3px; accent-color: var(--accent-yellow);">
+                </div>
+            </div>
         </div>
 
         <div class="task-column">
@@ -604,6 +632,7 @@
         function stopAllAmbient() {
             Object.keys(ambientNodes).forEach(k => stopAmbient(k));
             document.querySelectorAll('.ambient-btn.active').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.track-vol').forEach(el => el.classList.add('hidden'));
         }
 
         function toggleAmbient(key, iconEl) {
@@ -616,8 +645,27 @@
             const willEnable = !iconEl.classList.contains('active');
             iconEl.classList.toggle('active', willEnable);
 
+            const slider = document.getElementById('vol-' + key);
+            if (slider) {
+                if (willEnable) slider.classList.remove('hidden');
+                else slider.classList.add('hidden');
+            }
+
             if (!willEnable) stopAmbient(key);
             else startAmbient(key);
+        }
+
+        function setAmbientVolume(key, value) {
+            if (!settings.soundEnabled || !ambientNodes[key] || !ambientNodes[key].gainNode) return;
+            try {
+                const now = audioCtx.currentTime;
+                ambientNodes[key].gainNode.gain.cancelScheduledValues(now);
+                ambientNodes[key].gainNode.gain.setTargetAtTime(parseFloat(value), now, 0.05);
+            } catch(e) {}
+        }
+
+        function goToZen() {
+            window.location.href = `zen.html?timeLeft=${timeLeft}&isPlaying=${isRunning}`;
         }
 
         function startAmbient(key) {
@@ -631,8 +679,9 @@
             outGain.connect(masterGain);
 
             const now = ctx.currentTime;
+            const targetVol = parseFloat(document.getElementById('vol-' + key)?.value) || 0.8;
             outGain.gain.setValueAtTime(0, now);
-            outGain.gain.linearRampToValueAtTime(1, now + 0.6);
+            outGain.gain.linearRampToValueAtTime(targetVol, now + 0.6);
 
             const noise = ctx.createBufferSource();
             noise.buffer = makeNoiseBuffer(ctx);
@@ -765,7 +814,7 @@
                 };
             }
 
-            ambientNodes[key] = { stop: stopFn };
+            ambientNodes[key] = { stop: stopFn, gainNode: outGain };
         }
 
         function playBeep(freq = 520, durationMs = 120, gainValue = 0.35) {
@@ -879,7 +928,7 @@
             document.getElementById('time-string').innerText = display;
             
             const total = modes[currentMode].time;
-            const percent = ((total - timeLeft) / total) * 100;
+            const percent = (timeLeft / total) * 100;
             setProgress(percent);
         }
 

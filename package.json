@@ -16,6 +16,9 @@
     "productName": "10000Timer",
     "asar": true,
     "compression": "maximum",
+    "extraResources": [
+      { "from": "assets/frames", "to": "assets/frames" }
+    ],
     "files": [
       "demo.html",
       "main.js"

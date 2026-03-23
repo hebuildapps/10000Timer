@@ -6,12 +6,15 @@ function createWindow() {
     width: 980,
     height: 720,
     webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
+      contextIsolation: false,
+      nodeIntegration: true,
       // Persist renderer storage (localStorage) across app restarts.
       partition: 'persist:10000Timer'
     }
   });
+
+  // Remove the default menu (File, Edit, View, Window, Help)
+  win.removeMenu();
 
   win.loadFile(path.join(__dirname, 'demo.html'));
 }

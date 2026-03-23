@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Mode - 10000Timer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        body {
+            margin: 0;
+            background-color: #0a0a0a;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #zen-screen {
+            position: fixed;
+            inset: 0;
+            background: #0a0a0a;
+        }
+
+        #ascii-bg {
+            position: fixed;
+            inset: 0;
+            font-size: 12px;
+            font-family: monospace;
+            line-height: 1;
+            white-space: pre;
+            overflow: hidden;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        #ascii-bg pre {
+            margin: 0;
+            transform: translateY(60px);
+        }
+
+        #timer-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-family: monospace;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #exit-btn {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        #exit-btn:hover {
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Bottom Right Controls */
+        #theme-switcher {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 10;
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.5);
+            padding: 0.4rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .theme-btn {
+            background: transparent;
+            color: #888;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .theme-btn:hover {
+            color: #fff;
+        }
+
+        .theme-btn.active {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="zen-screen">
+        <div id="ascii-bg"></div>
+        <div id="timer-display" onclick="ZenTimer.togglePauseResume()">25:00</div>
+        
+        <button id="exit-btn" onclick="ZenTimer.exitZen()">Exit Zen</button>
+
+        <div id="theme-switcher">
+            <button id="btn-fire" class="theme-btn active" onclick="switchTheme('fire')">Fire</button>
+            <button id="btn-rain" class="theme-btn" onclick="switchTheme('rain')">Rain</button>
+        </div>
+    </div>
+
+    <script src="src/asciiPlayer.js"></script>
+    <script src="src/zenTimer.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const passedTime = urlParams.get('timeLeft');
+        const isPlaying = urlParams.get('isPlaying') === 'true';
+
+        let seconds = passedTime ? parseInt(passedTime, 10) : 25 * 60;
+        
+        // Start directly in fire theme with state passed from main app
+        ZenTimer.startZen('fire', seconds, isPlaying);
+
+        function switchTheme(theme) {
+            document.getElementById('btn-fire').classList.toggle('active', theme === 'fire');
+            document.getElementById('btn-rain').classList.toggle('active', theme === 'rain');
+            ZenTimer.changeTheme(theme);
+        }
+    </script>
+</body>
+
+</html>
